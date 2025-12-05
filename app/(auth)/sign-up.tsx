@@ -537,9 +537,11 @@ function glowStyle(anim: Animated.Value) {
 
             <TouchableOpacity
               style={styles.successBtn}
-              onPress={() => {
-                setSuccessModal(false);
-                router.replace("/(auth)/sign-in");
+              onPress={async () => {
+              setSuccessModal(false);
+await saveSession(null); // optional: reset stale data
+router.replace("/(auth)/sign-in");
+
               }}
             >
               <Text style={styles.successBtnText}>OK</Text>

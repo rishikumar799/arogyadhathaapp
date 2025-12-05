@@ -1,10 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { db, auth as firebaseAuth } from "./firebaseConfig";
+import { auth as firebaseAuth } from "./firebaseConfig";
 
 /* -------------------------------------------
-   SAVE SESSION (for mobile auto-login)
+   SAVE SESSION (MOBILE ONLY)
 -------------------------------------------- */
 export async function saveSession(data: any) {
   try {
@@ -36,7 +35,7 @@ export async function clearSession() {
 }
 
 /* -------------------------------------------
-   FIREBASE AUTH GUARD (real-time listener)
+   FIXED AUTH GUARD (DEVICE-ONLY SESSION)
 -------------------------------------------- */
 export function authGuard(
   callback: (result: {
@@ -46,64 +45,38 @@ export function authGuard(
     role?: string;
   }) => void
 ) {
-  callback({ loading: true, authenticated: false, approved: false });
+  // Begin in loading state
+  callback({
+    loading: true,
+    authenticated: false,
+    approved: false,
+  });
 
-  return onAuthStateChanged(firebaseAuth, async (user) => {
-    if (!user) {
-      callback({ loading: false, authenticated: false, approved: false });
-      return;
-    }
+  return onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+    // 1) ALWAYS load local mobile session first
+    const session = await loadSession();
 
-    const uid = user.uid;
-
-    // Approved users
-    const userDoc = await getDoc(doc(db, "users", uid));
-    if (userDoc.exists()) {
-      const data = userDoc.data();
-
-      // SAVE LOCAL SESSION FOR AUTO LOGIN
-      await saveSession({
-        uid,
-        email: user.email,
-        role: data.role,
-        status: "approved",
-      });
-
+    // If mobile session exists → logged in (NO firebase override)
+    if (session) {
       callback({
         loading: false,
         authenticated: true,
-        approved: true,
-        role: data.role,
+        approved: session.status === "approved",
+        role: session.role,
       });
       return;
     }
 
-    // Pending users
-    const reqDoc = await getDoc(doc(db, "requests", uid));
-    if (reqDoc.exists()) {
-      const data = reqDoc.data();
-
-      await saveSession({
-        uid,
-        email: user.email,
-        role: data.role,
-        status: "pending",
-      });
-
+    // 2) No local session → treat as logged out
+    // EVEN IF firebaseUser EXISTS
+    // (firebaseUser is ignored unless login/signup saves session)
+    if (!session) {
       callback({
         loading: false,
-        authenticated: true,
+        authenticated: false,
         approved: false,
-        role: data.role,
       });
       return;
     }
-
-    // No data found
-    callback({
-      loading: false,
-      authenticated: false,
-      approved: false,
-    });
   });
 }

@@ -13,15 +13,18 @@ export default function SplashScreen() {
 
   useEffect(() => {
     async function decideRoute() {
-      // 1) try to load saved mobile session
+      // tiny delay ensures storage is ready
+      await new Promise((res) => setTimeout(res, 150));
+
       const session = await loadSession();
 
       if (session && session.role && session.status === "approved") {
+        // always lowerCase role → valid path
         router.replace(`/(main)/${session.role.toLowerCase()}`);
         return;
       }
 
-      // 2) No saved session → show onboarding
+      // no session → go to onboarding
       router.replace("/onboarding");
     }
 
@@ -46,7 +49,9 @@ export default function SplashScreen() {
         style={{ transform: [{ scale: zoomAnim }], opacity: fadeAnim }}
       >
         <Image
-          source={{ uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo" }}
+          source={{
+            uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo",
+          }}
           style={styles.logo}
         />
       </Animated.View>

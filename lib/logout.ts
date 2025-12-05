@@ -1,18 +1,35 @@
-import { signOut } from "firebase/auth";
-import { clearSession } from "./authPersist";
-import { auth } from "./firebaseConfig";
+// lib/logout.ts
+import { clearSession } from "./authPersist"; // mobile session
+import { auth as firebaseAuth } from "./firebaseConfig";
+import { clearWebSession } from "./webPersist"; // web session
 
-/* -------------------------------------------
-   LOGOUT FUNCTION
--------------------------------------------- */
-export async function logoutUser() {
+/**
+ * logoutUser(device)
+ * - device: "mobile" | "web"
+ *
+ * Mobile logout:
+ *   - clears only AsyncStorage session (does NOT sign out Firebase)
+ *
+ * Web logout:
+ *   - clears localStorage session
+ *   - ALSO signs out Firebase (because web auth persists in memory)
+ */
+export async function logoutUser(device: "mobile" | "web") {
   try {
-    // Firebase logout
-    await signOut(auth);
-  } catch (e) {
-    console.warn("Firebase logout error:", e);
-  }
+    if (device === "mobile") {
+      // Device-isolated logout (no Firebase signOut)
+      await clearSession();
+    } 
+    
+    else if (device === "web") {
+      // Clear saved web session
+      await clearWebSession();
+      
+      // MUST sign out Firebase on web or auth.currentUser stays alive
+      await firebaseAuth.signOut();
+    }
 
-  // Clear saved local session (mobile)
-  await clearSession();
+  } catch (e) {
+    console.warn("Logout error:", e);
+  }
 }

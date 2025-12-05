@@ -3,6 +3,7 @@
 
 "use client";
 // import { FloatingBlob } from "@/components/animations/flotingBlob";
+import { loadSession } from "@/lib/authPersist";
 import { signInUser, signUpUser } from "@/lib/userService";
 import { loadWebSession, saveWebSession } from "@/lib/webPersist";
 import Feather from "@expo/vector-icons/Feather";
@@ -202,14 +203,34 @@ function validatePassword(password: string) {
 
 export default function Onboarding() {
   const router = useRouter();
-  useEffect(() => {
-    if (isWeb) {
-      const session = loadWebSession();
-      if (session && session.role && session.status === "approved") {
-        router.replace(`/(main)/${session.role.toLowerCase()}`);
+ useEffect(() => {
+  async function checkSessions() {
+    
+    if (Platform.OS !== "web") {
+      // MOBILE SESSION ONLY
+      const mobile = await loadSession();
+      if (mobile && mobile.role && mobile.status === "approved") {
+        router.replace(`/(main)/${mobile.role.toLowerCase()}`);
+        return;
       }
+
+      return; // STOP HERE (mobile only)
     }
-  }, []);
+
+    // WEB SESSION ONLY
+    const web = loadWebSession();
+    if (web && web.role && web.status === "approved") {
+      router.replace(`/(main)/${web.role.toLowerCase()}`);
+      return;
+    }
+
+    // else → stay on onboarding
+  }
+
+  checkSessions();
+}, []);
+
+
 
   // slider
   const flatRef = useRef<FlatList | null>(null);
