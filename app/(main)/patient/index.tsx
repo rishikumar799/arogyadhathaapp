@@ -1,125 +1,207 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import PatientTopNav from "@/components/patient/PatientTopNav";
 
 const quickAccess = [
-  { label: "AI Symptom Checker", icon: require("@/assets/icons/heart.png"), route: "/symptom-checker" },
-  { label: "Appointments", icon: require("@/assets/icons/calendar.png"), route: "/appointments" },
-  { label: "Diagnostics", icon: require("@/assets/icons/testtube.png"), route: "/lab-reports" },
-  { label: "My Medicines", icon: require("@/assets/icons/pill.png"), route: "/medicines" },
-  { label: "Blood Bank", icon: require("@/assets/icons/blood.png"), route: "/blood-bank" },
-  { label: "Crowd Funding", icon: require("@/assets/icons/gift.png"), route: "/community-fund" },
+  {
+    label: "AI Symptom Checker",
+    icon: require("@/assets/icons/heart.png"),
+    route: "/(main)/patient/symptom-checker",
+  },
+  {
+    label: "Appointments",
+    icon: require("@/assets/icons/calendar.png"),
+    route: "/(main)/patient/appointments",
+  },
+  {
+    label: "Diagnostics",
+    icon: require("@/assets/icons/testtube.png"),
+    route: "/(main)/patient/lab-reports",
+  },
+  {
+    label: "My Medicines",
+    icon: require("@/assets/icons/pill.png"),
+    route: "/(main)/patient/medicines",
+  },
+  {
+    label: "Blood Bank",
+    icon: require("@/assets/icons/blood.png"),
+    route: "/(main)/patient/blood-bank",
+  },
+  {
+    label: "Crowd Funding",
+    icon: require("@/assets/icons/gift.png"),
+    route: "/(main)/patient/community-fund",
+  },
 ];
 
 const organs = [
-  { name: "Heart", score: 92, icon: require("@/assets/organs/heart.png") },
-  { name: "Liver", score: 78, icon: require("@/assets/organs/liver.png") },
-  { name: "Kidneys", score: 88, icon: require("@/assets/organs/kidney.png") },
+  { name: "Heart", score: 92, icon: require("@/assets/icons/heart.png") },
+  { name: "Liver", score: 78, icon: require("@/assets/icons/heart.png") },
+  { name: "Kidneys", score: 88, icon: require("@/assets/icons/heart.png") },
 ];
 
 export default function PatientDashboard() {
   const router = useRouter();
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.tagline}>
-        Right disease for right doctor + Right Diet = 99% cure
-      </Text>
+    <View style={styles.page}>
+      {/* ✅ TOP NAV (LOGOUT HANDLED THERE) */}
+      <PatientTopNav />
 
-      {/* QUICK ACCESS */}
-      <Text style={styles.sectionTitle}>Quick Access</Text>
-      <View style={styles.grid}>
-        {quickAccess.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.card}
-            onPress={() => router.push(item.route)}
-          >
-            <Image source={item.icon} style={styles.icon} />
-            <Text style={styles.cardText}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+      >
+        {/* TAGLINE */}
+        <Text style={styles.tagline}>
+          Right disease for right doctor + Right Diet = 99% cure
+        </Text>
 
-      {/* ORGAN HEALTH */}
-      <Text style={styles.sectionTitle}>Organ Health Overview</Text>
-      <View style={styles.grid}>
-        {organs.map((o, index) => (
-          <View key={index} style={styles.organCard}>
-            <Image source={o.icon} style={{ width: 40, height: 40 }} />
-            <Text style={styles.organName}>{o.name}</Text>
-            <Text style={styles.organScore}>{o.score}%</Text>
-          </View>
-        ))}
-      </View>
+        {/* QUICK ACCESS */}
+        <Text style={styles.sectionTitle}>Quick Access</Text>
+        <View style={styles.grid}>
+          {quickAccess.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => router.push(item.route)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.iconWrap}>
+                <Image source={item.icon} style={styles.icon} />
+              </View>
+              <Text style={styles.cardText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <View style={{ height: 80 }} />
-    </ScrollView>
+        {/* ORGAN HEALTH */}
+        <Text style={styles.sectionTitle}>Organ Health Overview</Text>
+        <View style={styles.grid}>
+          {organs.map((o, index) => (
+            <View key={index} style={styles.organCard}>
+              <Image source={o.icon} style={styles.organIcon} />
+              <Text style={styles.organName}>{o.name}</Text>
+              <Text style={styles.organScore}>{o.score}%</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: 90 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  page: {
     flex: 1,
-    paddingHorizontal: 16,
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "#F6FAF8",
   },
+
+  container: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+  },
+
   tagline: {
     textAlign: "center",
-    marginTop: 12,
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
+    color: "#334155",
+    marginVertical: 14,
+    paddingHorizontal: 24,
   },
+
   sectionTitle: {
-    marginTop: 20,
-    marginBottom: 8,
     fontSize: 16,
     fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 10,
+    marginTop: 12,
   },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
+
   card: {
     width: "30%",
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginBottom: 12,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginBottom: 14,
     alignItems: "center",
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  icon: {
-    width: 32,
-    height: 32,
+
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E8F7EF",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 6,
   },
+
+  icon: {
+    width: 26,
+    height: 26,
+    resizeMode: "contain",
+  },
+
   cardText: {
     fontSize: 11,
     fontWeight: "700",
     textAlign: "center",
+    color: "#0F172A",
   },
 
   organCard: {
     width: "30%",
-    backgroundColor: "#fff",
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 12,
-    elevation: 3,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
+
+  organIcon: {
+    width: 38,
+    height: 38,
+    marginBottom: 4,
+  },
+
   organName: {
-    marginTop: 4,
+    fontSize: 12,
     fontWeight: "700",
-    fontSize: 12,
+    color: "#0F172A",
   },
+
   organScore: {
-    marginTop: 2,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "900",
-    color: "#1fbf66",
+    color: "#16A34A",
+    marginTop: 2,
   },
 });

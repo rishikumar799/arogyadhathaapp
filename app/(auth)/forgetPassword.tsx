@@ -149,10 +149,13 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient
-        colors={["#ECF2FF", "#E7F9FF", "#E4FFF3"]}
-        style={styles.gradient}
-      />
+      {LinearGradient && (
+  <LinearGradient
+    colors={["#ECF2FF", "#E7F9FF", "#E4FFF3"]}
+    style={styles.gradient}
+  />
+)}
+
 
       <Animated.View
         style={{
