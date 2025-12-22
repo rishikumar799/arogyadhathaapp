@@ -1,7 +1,5 @@
-// app/(main)/patient/index.tsx
-import useAuth from "@/hooks/useAuth";
-import React, { useRef, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Platform, ScrollView, StyleSheet, View } from "react-native";
 
 import CarouselBanners from "@/components/patient/CarouselBanners";
 import DownloadApp from "@/components/patient/DownloadApp";
@@ -14,6 +12,9 @@ import SearchSheet from "@/components/patient/SearchSheet";
 
 import { QUICK_ACCESS_ITEMS } from "@/components/patient/QuickAccessItems";
 
+import { loadSession } from "@/lib/authPersist";
+import { loadWebSession } from "@/lib/webPersist";
+
 import brainImg from "@/assets/images/brain.png";
 import heartImg from "@/assets/images/heart.png";
 import kidneysImg from "@/assets/images/kidneys.png";
@@ -21,10 +22,27 @@ import liverImg from "@/assets/images/liver.png";
 import lungsImg from "@/assets/images/lungs.png";
 import stomachImg from "@/assets/images/stomach.png";
 
+/* -------------------- STATIC DATA -------------------- */
+
 const CARDS = [
-  { title: "Link your NTR Vaidyaseva & ABHA ID", subtitle: "Store all health records in one secure place.", cta: "Link Now", gradient: ["#7C3AED", "#06B6D4"] },
-  { title: "Health Tip of the Day", subtitle: "Drink 8–10 glasses of water daily. Small habits, big impact.", cta: "Read Tip", gradient: ["#06B6D4", "#34D399"] },
-  { title: "Seasonal Advisory", subtitle: "Allergy season ahead. Get preventive medication.", cta: "Learn More", gradient: ["#F97316", "#FB7185"] },
+  {
+    title: "Link your NTR Vaidyaseva & ABHA ID",
+    subtitle: "Store all health records in one secure place.",
+    cta: "Link Now",
+    gradient: ["#7C3AED", "#06B6D4"],
+  },
+  {
+    title: "Health Tip of the Day",
+    subtitle: "Drink 8–10 glasses of water daily. Small habits, big impact.",
+    cta: "Read Tip",
+    gradient: ["#06B6D4", "#34D399"],
+  },
+  {
+    title: "Seasonal Advisory",
+    subtitle: "Allergy season ahead. Get preventive medication.",
+    cta: "Learn More",
+    gradient: ["#F97316", "#FB7185"],
+  },
 ];
 
 const ORG = [
@@ -36,17 +54,42 @@ const ORG = [
   { name: "Stomach", value: 93, status: "Healthy", image: stomachImg, bg: "rgba(255,200,200,0.4)", color: "#16A34A" },
 ];
 
+/* -------------------- SCREEN -------------------- */
+
 export default function PatientDashboard() {
   const scrollRef = useRef<ScrollView | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
 
-  // 🔑 AUTH LIVES HERE
-  const { user, initializing } = useAuth();
+  const [userName, setUserName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
-  const userName =
-    user?.displayName ||
-    user?.email?.split("@")[0] ||
-    "there";
+  // ✅ LOAD USER NAME FROM SESSION (WEB + MOBILE SAFE)
+  useEffect(() => {
+    (async () => {
+      try {
+        const session =
+          Platform.OS === "web"
+            ? loadWebSession()
+            : await loadSession();
+
+        console.log("SESSION DATA:", session);
+
+        const resolvedName =
+          session?.name ||
+          session?.displayName ||
+          session?.fullName ||
+          "";
+
+        if (typeof resolvedName === "string" && resolvedName.trim().length > 0) {
+          setUserName(resolvedName);
+        }
+      } catch (e) {
+        console.error("Failed to load session", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <View style={styles.page}>
@@ -55,8 +98,8 @@ export default function PatientDashboard() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* ✅ PASS NAME AS PROP */}
-        <PatientHeader name={userName} loading={initializing} />
+        {/* ✅ HEADER */}
+        <PatientHeader name={userName} loading={loading} />
 
         <QuickAccess items={QUICK_ACCESS_ITEMS} />
         <CarouselBanners banners={CARDS} />
@@ -66,11 +109,19 @@ export default function PatientDashboard() {
         <DownloadApp />
       </ScrollView>
 
-      <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      <SearchSheet
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
+      />
     </View>
   );
 }
 
+/* -------------------- STYLES -------------------- */
+
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FAFC" },
+  page: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
 });

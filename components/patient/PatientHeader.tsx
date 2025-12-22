@@ -1,20 +1,44 @@
+import { loadSession } from "@/lib/authPersist";
+import { loadWebSession } from "@/lib/webPersist";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
-import { StyleSheet, Text } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Platform, StyleSheet, Text } from "react-native";
 
-type Props = {
-  name: string;
-  loading: boolean;
-};
+export default function PatientHeader() {
+  const [name, setName] = useState<string>("");
 
-export default function PatientHeader({ name, loading }: Props) {
-  // 🔑 wait for auth to resolve
-  if (loading) return null;
+  useEffect(() => {
+    let mounted = true;
 
-  const safeName =
-    name && name.trim().length > 0 && name !== "there"
-      ? capitalize(name)
-      : null;
+    async function loadName() {
+      try {
+        // ✅ WEB
+        if (Platform.OS === "web") {
+          const webSession = loadWebSession();
+          if (mounted && webSession?.name) {
+            setName(webSession.name);
+            return;
+          }
+        }
+
+        // ✅ MOBILE
+        const mobileSession = await loadSession();
+        if (mounted && mobileSession?.name) {
+          setName(mobileSession.name);
+          return;
+        }
+
+        setName("User");
+      } catch {
+        setName("User");
+      }
+    }
+
+    loadName();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <LinearGradient
@@ -24,7 +48,7 @@ export default function PatientHeader({ name, loading }: Props) {
       style={styles.header}
     >
       <Text style={styles.greetingText}>
-        Hello{safeName ? `, ${safeName}` : ""}
+        Hello{ name ? `, ${name}` : "" }
       </Text>
 
       <Text style={styles.heroTitle}>
@@ -36,10 +60,6 @@ export default function PatientHeader({ name, loading }: Props) {
       </Text>
     </LinearGradient>
   );
-}
-
-function capitalize(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({

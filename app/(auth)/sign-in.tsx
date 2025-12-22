@@ -149,12 +149,22 @@ async function handleLogin() {
   }
 
   // SAVE SESSION FOR AUTOMATIC LOGIN NEXT TIME
-  await saveSession({
-    role: res.role,
-    status: res.status,
-    uid: res.uid,
-    email: cleanEmail,
-  });
+  // 🧠 BUILD DISPLAY NAME SAFELY (SAME AS WEB)
+const displayName =
+  res.name?.trim() ||
+  `${res.firstName || ""} ${res.lastName || ""}`.trim() ||
+  "User";
+
+
+// ✅ SAVE MOBILE SESSION (AUTHORITATIVE)
+await saveSession({
+  role: res.role,
+  status: res.status,
+  uid: res.uid,
+  email: cleanEmail,
+  name: displayName,   // ❤️ THIS FIXES HELLO USER
+});
+
 
   Animated.parallel([
     Animated.timing(exitFade, {

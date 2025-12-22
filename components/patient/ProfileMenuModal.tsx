@@ -12,13 +12,16 @@ import {
   View,
 } from "react-native";
 
-// BACKEND SESSION STORES
+// SESSION STORES
 import { clearSession, loadSession } from "@/lib/authPersist";
 import { clearWebSession, loadWebSession } from "@/lib/webPersist";
 
-// FIREBASE (SECONDARY)
+// FIREBASE
 import { auth as firebaseAuth } from "@/lib/firebaseConfig";
 import { signOut } from "firebase/auth";
+
+// ✅ SINGLE SOURCE OF TRUTH
+import { buildEntityId } from "@/lib/userUtils";
 
 type Props = {
   visible: boolean;
@@ -28,16 +31,17 @@ type Props = {
 export default function ProfileMenuModal({ visible, onClose }: Props) {
   const router = useRouter();
 
-  // 🔐 BACKEND USER STATE
-  const [userName, setUserName] = useState("User");
-  const [patientId, setPatientId] = useState("PAT001");
+  const [userName, setUserName] = useState("");
+  const [patientId, setPatientId] = useState("");
 
-  // 🔥 ANIMATION VALUES
+  // Animations
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-12)).current;
   const scale = useRef(new Animated.Value(0.96)).current;
 
-  // ✅ LOAD USER FROM BACKEND SESSION (AUTHORITATIVE)
+  /* =========================
+     LOAD SESSION (AUTHORITATIVE)
+  ========================= */
   useEffect(() => {
     if (!visible) return;
 
@@ -47,12 +51,20 @@ export default function ProfileMenuModal({ visible, onClose }: Props) {
           ? loadWebSession()
           : await loadSession();
 
-      if (session?.name) setUserName(session.name);
-      if (session?.patientId) setPatientId(session.patientId);
+      if (session?.name) {
+        setUserName(session.name);
+      }
+
+      if (session?.uid) {
+        // ✅ PATIENT ENTITY ID (STABLE & UNIQUE)
+        setPatientId(buildEntityId(session.uid, "PAT"));
+      }
     })();
   }, [visible]);
 
-  // 🔥 OPEN ANIMATION
+  /* =========================
+     OPEN / CLOSE ANIMATION
+  ========================= */
   useEffect(() => {
     if (visible) {
       Animated.parallel([
@@ -81,76 +93,57 @@ export default function ProfileMenuModal({ visible, onClose }: Props) {
     }
   }, [visible]);
 
-  // 🔴 REAL LOGOUT (SESSION FIRST)
+  /* =========================
+     LOGOUT
+  ========================= */
   const handleLogout = async () => {
-    if (Platform.OS === "web") {
-      clearWebSession();
-    } else {
-      await clearSession();
-    }
+    Platform.OS === "web" ? clearWebSession() : await clearSession();
 
     try {
       await signOut(firebaseAuth);
     } catch {}
 
     onClose();
-
-    setTimeout(() => {
-      router.replace("/onboarding");
-    }, Platform.OS === "web" ? 50 : 150);
+    setTimeout(
+      () => router.replace("/onboarding"),
+      Platform.OS === "web" ? 50 : 150
+    );
   };
 
   return (
     <Modal transparent visible={visible} animationType="none">
-      {/* BACKDROP */}
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={onClose}
-        style={styles.backdrop}
-      />
+      <TouchableOpacity style={styles.backdrop} onPress={onClose} />
 
-      {/* CARD */}
       <Animated.View
         style={[
           styles.card,
-          {
-            opacity,
-            transform: [{ translateY }, { scale }],
-          },
+          { opacity, transform: [{ translateY }, { scale }] },
         ]}
       >
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {userName.charAt(0).toUpperCase()}
+              {userName ? userName.charAt(0).toUpperCase() : "U"}
             </Text>
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.name}>{userName}</Text>
-            <Text style={styles.pid}>{patientId}</Text>
+            <Text style={styles.name}>{userName || "User"}</Text>
+            {patientId ? <Text style={styles.pid}>{patientId}</Text> : null}
           </View>
         </View>
 
         {/* MENU */}
         {MENU.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.row}
-            activeOpacity={0.65}
-          >
+          <TouchableOpacity key={item.label} style={styles.row}>
             <Ionicons name={item.icon as any} size={18} color="#065F46" />
             <Text style={styles.rowText}>{item.label}</Text>
           </TouchableOpacity>
         ))}
 
         {/* LOGOUT */}
-        <TouchableOpacity
-          style={styles.logout}
-          activeOpacity={0.7}
-          onPress={handleLogout}
-        >
+        <TouchableOpacity style={styles.logout} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={18} color="#DC2626" />
           <Text style={styles.logoutText}>Sign out</Text>
         </TouchableOpacity>
@@ -170,10 +163,7 @@ const MENU = [
 ];
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.28)",
-  },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.28)" },
 
   card: {
     position: "absolute",
@@ -190,11 +180,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
 
   avatar: {
     width: 44,
@@ -206,35 +192,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
 
-  avatarText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 16,
-  },
+  avatarText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  name: { fontSize: 15, fontWeight: "700" },
+  pid: { fontSize: 11, color: "#6B7280", marginTop: 1 },
 
-  name: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  pid: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 1,
-  },
-
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-  },
-
-  rowText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#065F46",
-  },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
+  rowText: { fontSize: 13, fontWeight: "600", color: "#065F46" },
 
   logout: {
     flexDirection: "row",
@@ -246,9 +209,5 @@ const styles = StyleSheet.create({
     borderTopColor: "#F3F4F6",
   },
 
-  logoutText: {
-    color: "#DC2626",
-    fontWeight: "700",
-    fontSize: 13,
-  },
+  logoutText: { color: "#DC2626", fontWeight: "700", fontSize: 13 },
 });

@@ -243,7 +243,9 @@ export default function Onboarding() {
   // sign-in / sign-up states
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
-  const [suName, setSuName] = useState("");
+  const [suFirstName, setSuFirstName] = useState("");
+const [suLastName, setSuLastName] = useState("");
+
   const [suPhone, setSuPhone] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
@@ -453,22 +455,30 @@ const handleSignIn = async () => {
       return;
     }
 
-    if (res.success && res.status === "approved") {
-      const role = (res.role || "patient").toLowerCase();
+   if (res.success && res.status === "approved") {
+  const role = (res.role || "patient").toLowerCase();
 
-      // SAVE WEB SESSION HERE
-      if (isWeb) {
-        saveWebSession({
-          role,
-          status: "approved",
-          uid: res.uid,
-          email,
-        });
-      }
+  // 🔑 BUILD DISPLAY NAME SAFELY
+  const displayName =
+  res.name?.trim() ||
+  `${res.firstName || ""} ${res.lastName || ""}`.trim() ||
+  "User";
 
-      safeNavigate(`/(main)/${role}`);
-      return;
-    }
+
+  if (isWeb) {
+    saveWebSession({
+      role,
+      status: "approved",
+      uid: res.uid,
+      email,
+      name: displayName,   // ✅ THIS FIXES HELLO USERNAME
+    });
+  }
+
+  safeNavigate(`/(main)/${role}`);
+  return;
+}
+
 
     showWebModal("Login Error", "Something went wrong.");
 
@@ -490,11 +500,18 @@ const handleSignIn = async () => {
   const handleSignUp = async () => {
     if (isWeb) {
       // web-only validations
-      const nameErr = validateName(suName);
-      if (nameErr) {
-        showWebModal("Sign Up Error", nameErr);
-        return;
-      }
+      const firstErr = validateName(suFirstName);
+if (firstErr) {
+  showWebModal("Sign Up Error", "First name is required");
+  return;
+}
+
+const lastErr = validateName(suLastName);
+if (lastErr) {
+  showWebModal("Sign Up Error", "Last name is required");
+  return;
+}
+
 
       const emailErr = validateEmail(suEmail);
       if (emailErr) {
@@ -527,13 +544,20 @@ const handleSignIn = async () => {
 
     setSignUpLoading(true);
     try {
-      const res = await signUpUser({
-        name: suName,
-        phone: suPhone,
-        email: suEmail.trim(),
-        password: suPassword,
-        role: suRole,
-      });
+      const firstName = suFirstName.trim();
+const lastName = suLastName.trim();
+const fullName = `${firstName} ${lastName}`.trim();
+
+const res = await signUpUser({
+  name: fullName,     // backward compatibility
+  firstName,          // NEW
+  lastName,           // NEW
+  phone: suPhone,
+  email: suEmail.trim(),
+  password: suPassword,
+  role: suRole,
+});
+
 
       setSignUpLoading(false);
 
@@ -560,7 +584,26 @@ const handleSignIn = async () => {
       }
 
       // if patient -> auto redirect to patient dashboard
-      safeNavigate("/(main)/patient");
+      // ✅ AUTO LOGIN AFTER SIGN UP (WEB SAFE)
+if (res.status === "approved") {
+  const role = suRole.toLowerCase();
+
+  const displayName = `${suFirstName.trim()} ${suLastName.trim()}`.trim();
+
+  if (isWeb) {
+    saveWebSession({
+      uid: res.uid,
+      role,
+      status: "approved",
+      email: suEmail.trim().toLowerCase(),
+      name: displayName || "User",
+    });
+  }
+
+  safeNavigate(`/(main)/${role}`);
+  return;
+}
+
     } catch (err) {
       setSignUpLoading(false);
       console.warn("signUp error:", err);
@@ -749,14 +792,27 @@ const handleSignIn = async () => {
     <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
 
       {/* FULL NAME */}
-      <View style={styles.webInputOuter}>
-        <TextInput
-          placeholder="Full Name"
-          value={suName}
-          onChangeText={setSuName}
-          style={styles.webInput}
-        />
-      </View>
+      {/* FIRST + LAST NAME */}
+<View style={{ flexDirection: "row", gap: 10 }}>
+  <View style={[styles.webInputOuter, { flex: 1 }]}>
+    <TextInput
+      placeholder="First Name"
+      value={suFirstName}
+      onChangeText={setSuFirstName}
+      style={styles.webInput}
+    />
+  </View>
+
+  <View style={[styles.webInputOuter, { flex: 1 }]}>
+    <TextInput
+      placeholder="Last Name"
+      value={suLastName}
+      onChangeText={setSuLastName}
+      style={styles.webInput}
+    />
+  </View>
+</View>
+
 
       {/* PHONE */}
       <View style={styles.webInputOuter}>
@@ -1313,10 +1369,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  webInput: {
-    fontSize: 15,
-    color: "#0b233b",
-  },
+ webInput: {
+  fontSize: 15,
+  color: "#0b233b",
+
+  // 🔥 WEB FOCUS FIX
+  outlineStyle: "none",        // removes black outline
+  outlineWidth: 0,
+  boxShadow: "none",           // removes browser glow
+} as any,
+
 
   webButton: {
     backgroundColor: "#13C84A",

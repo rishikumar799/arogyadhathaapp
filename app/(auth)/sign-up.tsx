@@ -34,7 +34,9 @@ const roles = [
 export default function SignUpScreen() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+const [lastName, setLastName] = useState("");
+
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -159,7 +161,10 @@ function glowStyle(anim: Animated.Value) {
 
   /* SIGN UP */
  async function handleSignup() {
-  const cleanName = name.trim();
+  const cleanFirst = firstName.trim();
+const cleanLast = lastName.trim();
+const fullName = `${cleanFirst} ${cleanLast}`.trim();
+
   const cleanEmail = email.trim().toLowerCase();
   const cleanPhone = phone.trim();
   const cleanPass = password.trim();
@@ -168,18 +173,21 @@ function glowStyle(anim: Animated.Value) {
   // ---------------------------------------------------
   // 1. NAME VALIDATION (same as web validateName)
   // ---------------------------------------------------
-  if (!cleanName) {
-    return alert("Name is required.");
-  }
 
-  if (cleanName.length < 3) {
-    return alert("Name must be at least 3 characters long.");
-  }
 
-  const nameRegex = /^[a-zA-Z\s.'-]{2,}$/;
-  if (!nameRegex.test(cleanName)) {
-    return alert("Name contains invalid characters.");
-  }
+if (!cleanFirst) {
+  return alert("First name is required.");
+}
+
+const nameRegex = /^[a-zA-Z\s.'-]{2,}$/;
+
+if (!nameRegex.test(cleanFirst)) {
+  return alert("First name contains invalid characters.");
+}
+
+if (cleanLast && !nameRegex.test(cleanLast)) {
+  return alert("Last name contains invalid characters.");
+}
 
   // ---------------------------------------------------
   // 2. PHONE VALIDATION (same as web validatePhone)
@@ -237,12 +245,15 @@ function glowStyle(anim: Animated.Value) {
 
   try {
     const res = await signUpUser({
-      name: cleanName,
-      phone: cleanPhone,
-      email: cleanEmail,
-      password: cleanPass,
-      role,
-    });
+  name: fullName,           // backward compatibility
+  firstName: cleanFirst,   // source of truth
+  lastName: cleanLast,     // source of truth
+  phone: cleanPhone,
+  email: cleanEmail,
+  password: cleanPass,
+  role,
+});
+
 
     setLoading(false);
 
@@ -278,12 +289,14 @@ function glowStyle(anim: Animated.Value) {
     // Patient -> auto-approved
    if (res.status === "approved" && role === "Patient") {
   // SAVE SESSION FOR AUTO LOGIN
-  await saveSession({
-    role: "patient",
-    status: "approved",
-    uid: res.uid,
-    email: cleanEmail,
-  });
+ await saveSession({
+  role: "patient",
+  status: "approved",
+  uid: res.uid,
+  email: cleanEmail,
+  name: `${cleanFirst} ${cleanLast}`.trim(),
+});
+
 
   router.replace("/(main)/patient");
   return;
@@ -337,17 +350,21 @@ function glowStyle(anim: Animated.Value) {
             <Text style={styles.subtitle}>Sign up to manage your health records.</Text>
 
             {/* FULL NAME */}
-            <Animated.View style={[styles.glowBox, glowStyle(glowName)]}>
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                placeholderTextColor="#9dafc1"
-                value={name}
-                onChangeText={setName}
-                onFocus={() => glow(glowName, true)}
-                onBlur={() => glow(glowName, false)}
-              />
-            </Animated.View>
+            <Animated.View style={[styles.glowBox, glowStyle(glowName), { flex: 1 }]}>
+    <TextInput
+      placeholder="First Name"
+      value={firstName}
+      onChangeText={setFirstName}
+    />
+  </Animated.View>
+
+  <Animated.View style={[styles.glowBox, glowStyle(glowName), { flex: 1 }]}>
+    <TextInput
+      placeholder="Last Name"
+      value={lastName}
+      onChangeText={setLastName}
+    />
+  </Animated.View>
 
             {/* PHONE */}
             <Animated.View style={[styles.glowBox, glowStyle(glowPhone)]}>
