@@ -1,14 +1,9 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import MobileDashboard from "@/components/pharmacy/dashboards/MobileDashboard";
+import WebDashboard from "@/components/pharmacy/dashboards/WebDashboard";
+import { Platform } from "react-native";
 
-export default function PharmacyIndex() {
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText type='title'>Pharmacy</ThemedText>
-    </ThemedView>
-  );
+export default function DoctorIndex() {
+  return Platform.OS === "web"
+    ? <WebDashboard />
+    : <MobileDashboard />;
 }
-
-const styles = StyleSheet.create({ container: { padding: 16 } });

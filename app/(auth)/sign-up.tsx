@@ -23,12 +23,12 @@ import {
 import Feather from "@expo/vector-icons/Feather";
 
 const roles = [
-  "Receptionist",
-  "Diagnostics",
-  "Doctor",
-  "Patient",
-  "Hospital",
-  "Pharmacy",
+  "receptionist",
+  "diagnostics",
+  "doctor",
+  "patient",
+  "hospital",
+  "pharmacy",
 ];
 
 export default function SignUpScreen() {
@@ -287,7 +287,7 @@ if (cleanLast && !nameRegex.test(cleanLast)) {
     // ---------------------------------------------------
 
     // Patient -> auto-approved
-   if (res.status === "approved" && role === "Patient") {
+   if (res.status === "approved" && role === "patient") {
   // SAVE SESSION FOR AUTO LOGIN
  await saveSession({
   role: "patient",
@@ -337,7 +337,7 @@ if (cleanLast && !nameRegex.test(cleanLast)) {
           {/* LOGO */}
           <Animated.View style={[styles.logoRow, { transform: [{ scale: logoScale }] }]}>
             <Image
-              source={{ uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo" }}
+              source={{ uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/Arogyadathaicon.png" }}
               style={styles.logo}
             />
             <Text style={styles.logoText}>Arogyadatha</Text>

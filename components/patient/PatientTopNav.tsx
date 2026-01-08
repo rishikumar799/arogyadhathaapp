@@ -11,8 +11,8 @@ import {
   View,
 } from "react-native";
 
+import logo from "@/assets/images/Arogyadathalogo.png";
 import profileImg from "@/assets/images/man.png";
-import logo from "@/assets/images/newlogo.png";
 import SearchPopup from "./SearchPopup";
 
 // LOCATION
@@ -138,8 +138,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  
   leftWrap: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logo: { width: 32, height: 32, resizeMode: "contain" },
+  logo: { width: 40, height: 40, resizeMode: "contain" },
   titleBlock: { flexDirection: "column", maxWidth: 140 },
   appName: { fontSize: 15, fontWeight: "800", color: "#ECFDF5" },
   locationText: { fontSize: 11, color: "#D1FAE5", marginTop: -2 },

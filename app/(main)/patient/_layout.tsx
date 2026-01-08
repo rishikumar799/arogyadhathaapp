@@ -1,27 +1,41 @@
-import { Stack, useSegments } from "expo-router";
+import { loadWebSession } from "@/lib/webPersist";
+import { Redirect, Stack, useSegments } from "expo-router";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import PatientBottomNav from "@/components/patient/PatientBottomNav";
 import PatientTopNav from "@/components/patient/PatientTopNav";
 
 export default function PatientLayout() {
   const segments = useSegments();
-  const currentRoute = segments[segments.length - 1];
 
-  const hideHeader = currentRoute === "index"; // Home screen → no header
+  // 🔒 WEB ROLE GUARD
+ if (Platform.OS === "web") {
+  const session = loadWebSession();
+
+  if (!session?.uid) {
+    return null; // ⛔ let RootLayout handle onboarding
+  }
+
+  if (session.role?.toLowerCase() !== "patient") {
+    return <Redirect href={`/(main)/${session.role.toLowerCase()}`} />;
+  }
+}
+
+
+  // ---------------- YOUR EXISTING LOGIC ----------------
+  const currentRoute = segments[segments.length - 1];
+  const hideHeader = currentRoute === "index";
 
   return (
     <View style={styles.wrapper}>
-      {/* TOP NAV */}
       {!hideHeader && <PatientTopNav />}
 
-      {/* MAIN SCREEN AREA */}
       <View style={styles.screenArea}>
         <Stack
           screenOptions={{
             headerShown: false,
-            animation: "fade", // smooth elegant transitions
+            animation: "fade",
           }}
         >
           <Stack.Screen name="index" />
@@ -32,19 +46,12 @@ export default function PatientLayout() {
         </Stack>
       </View>
 
-      {/* BOTTOM NAV ALWAYS */}
       <PatientBottomNav />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  screenArea: {
-    flex: 1,
-    paddingBottom: 70, // prevent screen content from going under bottom nav
-  },
+  wrapper: { flex: 1, backgroundColor: "#F8FAFC" },
+  screenArea: { flex: 1, paddingBottom: 70 },
 });

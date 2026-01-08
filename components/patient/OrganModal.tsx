@@ -1,3 +1,4 @@
+import UploadReportButton from "@/components/patient/UploadReportButton";
 import React from "react";
 import {
   Modal,
@@ -9,24 +10,24 @@ import {
 
 type Props = {
   organ: {
-    id: string;
-    score: number | null;
+    key: string;
+    name: string;
+    value: number | null;
     status: string;
   };
+  uid: string;
   onClose: () => void;
 };
 
-export default function OrganModal({ organ, onClose }: Props) {
+export default function OrganModal({ organ, uid, onClose }: Props) {
   return (
     <Modal transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.card}>
-          {/* Title */}
-          <Text style={styles.title}>
-            {organ.id.toUpperCase()} Health
-          </Text>
+          {/* TITLE */}
+          <Text style={styles.title}>{organ.name} Health</Text>
 
-          {/* Status */}
+          {/* STATUS */}
           <Text style={styles.label}>Current Status</Text>
           <Text
             style={[
@@ -38,32 +39,25 @@ export default function OrganModal({ organ, onClose }: Props) {
             {organ.status}
           </Text>
 
-          {/* Score */}
+          {/* SCORE */}
           <Text style={styles.label}>Health Score</Text>
           <Text style={styles.value}>
-            {organ.score === null
+            {organ.value === null
               ? "Awaiting diagnostics"
-              : `${organ.score}%`}
+              : `${organ.value}%`}
           </Text>
 
-          {/* Upload Placeholder */}
-          <Pressable style={styles.uploadBtn}>
-            <Text style={styles.uploadText}>
-              Upload Medical Report
-            </Text>
-            <Text style={styles.uploadSub}>
-              PDF / Image • Doctor or Lab report
-            </Text>
-          </Pressable>
+          {/* ✅ REAL UPLOAD */}
+          <UploadReportButton uid={uid} organKey={organ.key} />
 
-          {/* AI Placeholder */}
+          {/* AI PLACEHOLDER */}
           <Pressable style={styles.aiBtn}>
             <Text style={styles.aiText}>
               AI Diagnostics – Coming Soon
             </Text>
           </Pressable>
 
-          {/* Close */}
+          {/* CLOSE */}
           <Pressable onPress={onClose}>
             <Text style={styles.close}>Close</Text>
           </Pressable>
@@ -72,6 +66,7 @@ export default function OrganModal({ organ, onClose }: Props) {
     </Modal>
   );
 }
+
 
 const styles = StyleSheet.create({
   overlay: {

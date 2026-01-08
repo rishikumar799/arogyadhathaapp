@@ -50,7 +50,7 @@ export default function SplashScreen() {
       >
         <Image
           source={{
-            uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo",
+            uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/Arogyadathawhite.png?updatedAt=1766593690448",
           }}
           style={styles.logo}
         />

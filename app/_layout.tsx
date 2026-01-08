@@ -1,19 +1,31 @@
+// 🚨 MUST be the very first import
+import "react-native-gesture-handler";
+
 import LocationChangePrompt from "@/components/common/LocationChangePrompt";
 import { LocationProvider } from "@/contexts/LocationContext";
 import { Stack } from "expo-router";
+import { StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function RootLayout() {
   return (
-    <LocationProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(main)" />
-      </Stack>
+    <GestureHandlerRootView style={styles.container}>
+      <LocationProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="splash" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(main)" />
+        </Stack>
 
-      {/* 🔔 Global location-change confirmation */}
-      <LocationChangePrompt />
-    </LocationProvider>
+        <LocationChangePrompt />
+      </LocationProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

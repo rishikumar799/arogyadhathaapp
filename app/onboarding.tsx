@@ -3,13 +3,12 @@
 
 "use client";
 // import { FloatingBlob } from "@/components/animations/flotingBlob";
-import { loadSession } from "@/lib/authPersist";
 import { signInUser, signUpUser } from "@/lib/userService";
 import { loadWebSession, saveWebSession } from "@/lib/webPersist";
 import Feather from "@expo/vector-icons/Feather";
 import { ResizeMode, Video } from "expo-av";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { Redirect, useRootNavigationState, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 
 import {
@@ -203,32 +202,22 @@ function validatePassword(password: string) {
 
 export default function Onboarding() {
   const router = useRouter();
- useEffect(() => {
-  async function checkSessions() {
-    
-    if (Platform.OS !== "web") {
-      // MOBILE SESSION ONLY
-      const mobile = await loadSession();
-      if (mobile && mobile.role && mobile.status === "approved") {
-        router.replace(`/(main)/${mobile.role.toLowerCase()}`);
-        return;
-      }
+  const rootNavState = useRootNavigationState();
 
-      return; // STOP HERE (mobile only)
-    }
 
-    // WEB SESSION ONLY
-    const web = loadWebSession();
-    if (web && web.role && web.status === "approved") {
-      router.replace(`/(main)/${web.role.toLowerCase()}`);
-      return;
-    }
+const isWeb = Platform.OS === "web";
 
-    // else → stay on onboarding
+if (isWeb) {
+  const session = loadWebSession();
+
+  if (session?.uid && session.status === "approved") {
+    return (
+      <Redirect href={`/(main)/${session.role.toLowerCase()}`} />
+    );
   }
+}
 
-  checkSessions();
-}, []);
+
 
 
 
@@ -258,7 +247,7 @@ const [showSuConfirm, setShowSuConfirm] = useState(false);
 
   const [hovered, setHovered] = useState<string | null>(null);
 
-const roles = ["Patient", "Doctor", "Diagnostics", "Pharmacy", "Hospital", "Receptionist"];
+const roles = ["patient", "doctor", "diagnostics", "pharmacy", "hospital", "receptionist"];
 
 // Floating dropdown system
 const roleInputRef = useRef(null);

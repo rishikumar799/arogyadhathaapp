@@ -10,9 +10,15 @@ import QuickAccess from "@/components/patient/QuickAccess";
 import ScoreGuide from "@/components/patient/ScoreGuide";
 import SearchSheet from "@/components/patient/SearchSheet";
 
-import { QUICK_ACCESS_ITEMS } from "@/components/patient/QuickAccessItems";
+// 🔔 NEW: Announcement Popup
+import AnnouncementPopup from "@/components/common/AnnouncementPopup";
 
+// 🔥 MODAL
+import OrganHealthModal from "@/components/patient/OrganModal";
+
+import { QUICK_ACCESS_ITEMS } from "@/components/patient/QuickAccessItems";
 import { loadSession } from "@/lib/authPersist";
+import { getOrganHealth } from "@/lib/useOrganHealth";
 import { loadWebSession } from "@/lib/webPersist";
 
 import brainImg from "@/assets/images/brain.png";
@@ -22,7 +28,7 @@ import liverImg from "@/assets/images/liver.png";
 import lungsImg from "@/assets/images/lungs.png";
 import stomachImg from "@/assets/images/stomach.png";
 
-/* -------------------- STATIC DATA -------------------- */
+/* -------------------- STATIC UI DATA -------------------- */
 
 const CARDS = [
   {
@@ -45,25 +51,29 @@ const CARDS = [
   },
 ];
 
-const ORG = [
-  { name: "Heart", value: 85, status: "Needs Monitoring", image: heartImg, bg: "rgba(255,182,193,0.4)", color: "#F59E0B" },
-  { name: "Liver", value: 70, status: "Critical Attention", image: liverImg, bg: "rgba(255,210,150,0.4)", color: "#EF4444" },
-  { name: "Kidneys", value: 90, status: "Good", image: kidneysImg, bg: "rgba(180,255,200,0.4)", color: "#22C55E" },
-  { name: "Lungs", value: 92, status: "Good", image: lungsImg, bg: "rgba(185,225,255,0.4)", color: "#22C55E" },
-  { name: "Brain", value: 98, status: "Healthy", image: brainImg, bg: "rgba(220,210,255,0.45)", color: "#16A34A" },
-  { name: "Stomach", value: 93, status: "Healthy", image: stomachImg, bg: "rgba(255,200,200,0.4)", color: "#16A34A" },
+const BASE_ORG = [
+  { key: "heart", name: "Heart", image: heartImg, color: "#F59E0B", bg: "rgba(255,182,193,0.4)" },
+  { key: "liver", name: "Liver", image: liverImg, color: "#EF4444", bg: "rgba(255,210,150,0.4)" },
+  { key: "kidneys", name: "Kidneys", image: kidneysImg, color: "#22C55E", bg: "rgba(180,255,200,0.4)" },
+  { key: "lungs", name: "Lungs", image: lungsImg, color: "#22C55E", bg: "rgba(185,225,255,0.4)" },
+  { key: "brain", name: "Brain", image: brainImg, color: "#16A34A", bg: "rgba(220,210,255,0.45)" },
+  { key: "stomach", name: "Stomach", image: stomachImg, color: "#16A34A", bg: "rgba(255,200,200,0.4)" },
 ];
 
 /* -------------------- SCREEN -------------------- */
 
 export default function PatientDashboard() {
   const scrollRef = useRef<ScrollView | null>(null);
-  const [searchVisible, setSearchVisible] = useState(false);
 
-  const [userName, setUserName] = useState<string>("");
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [uid, setUid] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ LOAD USER NAME FROM SESSION (WEB + MOBILE SAFE)
+  const [organBackend, setOrganBackend] = useState<Record<string, any>>({});
+  const [selectedOrgan, setSelectedOrgan] = useState<any | null>(null);
+
+  /* -------------------- LOAD SESSION + ORG DATA -------------------- */
   useEffect(() => {
     (async () => {
       try {
@@ -72,7 +82,9 @@ export default function PatientDashboard() {
             ? loadWebSession()
             : await loadSession();
 
-        console.log("SESSION DATA:", session);
+        if (!session?.uid) return;
+
+        setUid(session.uid);
 
         const resolvedName =
           session?.name ||
@@ -80,16 +92,29 @@ export default function PatientDashboard() {
           session?.fullName ||
           "";
 
-        if (typeof resolvedName === "string" && resolvedName.trim().length > 0) {
-          setUserName(resolvedName);
-        }
-      } catch (e) {
-        console.error("Failed to load session", e);
+        setUserName(resolvedName);
+
+        const organData = await getOrganHealth(session.uid);
+        setOrganBackend(organData);
+      } catch (err) {
+        console.error("Dashboard init failed", err);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  /* -------------------- MERGE UI + BACKEND -------------------- */
+  const ORG = BASE_ORG.map((org) => {
+    const backend = organBackend[org.key];
+
+    return {
+      ...org,
+      value: backend?.score ?? null,
+      status: backend?.status ?? "Awaiting diagnostics",
+      raw: backend ?? null,
+    };
+  });
 
   return (
     <View style={styles.page}>
@@ -98,21 +123,44 @@ export default function PatientDashboard() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* ✅ HEADER */}
         <PatientHeader name={userName} loading={loading} />
 
         <QuickAccess items={QUICK_ACCESS_ITEMS} />
         <CarouselBanners banners={CARDS} />
-        <OrganHealth items={ORG} />
+
+        <OrganHealth
+          items={ORG}
+          onSelect={(org) => setSelectedOrgan(org)}
+        />
+
         <ScoreGuide />
         <MedicineAssistance />
         <DownloadApp />
       </ScrollView>
 
+      {/* 🔍 SEARCH */}
       <SearchSheet
         visible={searchVisible}
         onClose={() => setSearchVisible(false)}
       />
+
+      {/* 🔔 ANNOUNCEMENT POPUP (GLOBAL, ONCE PER DAY) */}
+      {uid && (
+        <AnnouncementPopup
+          uid={uid}
+          role="patient"
+        />
+      )}
+
+      {/* 🧠 ORGAN HEALTH MODAL */}
+      {selectedOrgan && (
+        <OrganHealthModal
+          visible={!!selectedOrgan}
+          organ={selectedOrgan}
+          uid={uid}
+          onClose={() => setSelectedOrgan(null)}
+        />
+      )}
     </View>
   );
 }

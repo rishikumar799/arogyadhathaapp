@@ -1,14 +1,10 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform } from "react-native";
+
+import MobileDashboard from "@/components/superadmin/dashboards/MobileDashboard";
+import WebDashboard from "@/components/superadmin/dashboards/WebDashboard";
 
 export default function SuperadminIndex() {
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText type='title'>Superadmin</ThemedText>
-    </ThemedView>
-  );
+  return Platform.OS === "web"
+    ? <WebDashboard />
+    : <MobileDashboard />;
 }
-
-const styles = StyleSheet.create({ container: { padding: 16 } });

@@ -3,14 +3,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Easing,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Easing,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { auth, db } from "@/lib/firebaseConfig";
@@ -177,7 +177,7 @@ export default function ForgotPasswordScreen() {
           >
             <Image
               source={{
-                uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo",
+                uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/Arogyadathaicon.png",
               }}
               style={styles.logo}
             />

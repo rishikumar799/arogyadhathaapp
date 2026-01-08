@@ -1,5 +1,5 @@
 // lib/userUtils.ts
-export function buildEntityId(uid: string, prefix: "PAT" | "DOC" | "DIA" | "PHA" | "HOS") {
+export function buildEntityId(uid: string, prefix: "PAT" | "DOC" | "DIA" | "PHA" | "HOS"): string {
   if (!uid || uid.length < 4) return "";
 
   // keep exact case, first 4 chars from END

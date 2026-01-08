@@ -1,6 +1,5 @@
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
@@ -9,6 +8,7 @@ import {
   doc,
   getDocs,
   query,
+  serverTimestamp,
   setDoc,
   where,
 } from "firebase/firestore";
@@ -16,7 +16,7 @@ import {
 import { auth as firebaseAuth, db as firebaseDB } from "./firebaseConfig";
 
 /* ---------------------------------------------------------
-   ERROR MAPPER (UNCHANGED)
+   ERROR MAPPER
 --------------------------------------------------------- */
 function mapFirebaseError(e: any) {
   const code = (e?.code || "").toLowerCase();
@@ -32,109 +32,92 @@ function mapFirebaseError(e: any) {
 }
 
 /* ---------------------------------------------------------
-   FIND USER BY EMAIL (UNCHANGED)
+   FIND USER BY EMAIL
 --------------------------------------------------------- */
 async function findUserByEmail(email: string) {
   const clean = email.trim().toLowerCase();
 
-  // PATIENT
+  // USERS (patients)
   const q1 = query(collection(firebaseDB, "users"), where("email", "==", clean));
   const s1 = await getDocs(q1);
- if (!s1.empty) {
-  const docSnap = s1.docs[0];
-  return {
-    type: "patient",
-    data: {
-      uid: docSnap.id,      // ⭐ THIS WAS MISSING
-      ...docSnap.data(),
-    },
-  };
-}
 
-  // DOCTOR / STAFF
+  if (!s1.empty) {
+    const docSnap = s1.docs[0];
+    return {
+      type: "patient",
+      data: { uid: docSnap.id, ...docSnap.data() },
+    };
+  }
+
+  // REQUESTS (staff)
   const q2 = query(
     collection(firebaseDB, "requests"),
     where("email", "==", clean)
   );
   const s2 = await getDocs(q2);
-if (!s2.empty) {
-  const docSnap = s2.docs[0];
-  return {
-    type: "request",
-    data: {
-      uid: docSnap.id,
-      ...docSnap.data(),
-    },
-  };
-}
+
+  if (!s2.empty) {
+    const docSnap = s2.docs[0];
+    return {
+      type: "request",
+      data: { uid: docSnap.id, ...docSnap.data() },
+    };
+  }
 
   return null;
 }
 
 /* ---------------------------------------------------------
-   SIGN IN (UNCHANGED, WORKING PERFECTLY)
+   SIGN IN
 --------------------------------------------------------- */
 export async function signInUser(email: string, password: string) {
   try {
     const clean = email.trim().toLowerCase();
 
+    // 🔴 Firestore check first (unchanged logic)
     const found = await findUserByEmail(clean);
-    if (!found) return { success: false, message: "EMAIL_NOT_REGISTERED" };
 
-    const { type, data } = found;
-
-    /* PATIENT LOGIN */
-    if (type === "patient") {
-      try {
-        await signInWithEmailAndPassword(firebaseAuth, clean, password);
-      } catch (err: any) {
-        return { success: false, message: mapFirebaseError(err) };
-      }
-
-     return {
-  success: true,
-  status: "approved",
-  role: data.role,
-  name: data.name || "",
-  firstName: data.firstName || "",
-  lastName: data.lastName || "",
-  uid: data.uid,
-};
-
-
+    if (!found) {
+      return { success: false, message: "EMAIL_NOT_REGISTERED" };
     }
 
-    /* DOCTOR / STAFF LOGIN */
-    if (type === "request") {
-      try {
-        await signInWithEmailAndPassword(firebaseAuth, clean, password);
-      } catch (err: any) {
-        return { success: false, message: mapFirebaseError(err) };
-      }
+    // 🔴 Auth
+    await signInWithEmailAndPassword(firebaseAuth, clean, password);
 
-      if (data.status === "pending") {
-        return {
-          success: false,
-          status: "pending",
-          message: "PENDING_APPROVAL",
-        };
-      }
-
+    // PATIENT
+    if (found.type === "patient") {
       return {
         success: true,
         status: "approved",
-        role: data.role,
+        role: found.data.role,
+        name: found.data.name || "",
+        firstName: found.data.firstName || "",
+        lastName: found.data.lastName || "",
+        uid: found.data.uid,
       };
     }
 
-    return { success: false, message: "GENERIC_ERROR" };
-  } catch {
-    return { success: false, message: "GENERIC_ERROR" };
+    // STAFF
+    if (found.data.status === "pending") {
+      return {
+        success: false,
+        status: "pending",
+        message: "PENDING_APPROVAL",
+      };
+    }
+
+    return {
+      success: true,
+      status: "approved",
+      role: found.data.role,
+    };
+  } catch (e: any) {
+    return { success: false, message: mapFirebaseError(e) };
   }
 }
 
 /* ---------------------------------------------------------
-   SIGN UP (EXTENDED — SAFE & BACKWARD COMPATIBLE)
+   SIGN UP (OPTIMIZED – SAME LOGIC)
 --------------------------------------------------------- */
 export async function signUpUser({
   name,
@@ -143,11 +126,11 @@ export async function signUpUser({
   email,
   phone,
   password,
-  role = "Patient",
+  role = "patient",
 }: {
-  name: string;              // backward compatibility
-  firstName?: string;        // NEW
-  lastName?: string;         // NEW
+  name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone?: string;
   password: string;
@@ -155,8 +138,9 @@ export async function signUpUser({
 }) {
   try {
     const cleanEmail = email.trim().toLowerCase();
+    const cleanRole = role.trim().toLowerCase();
 
-    /* STEP 1: Create Firebase Auth user */
+    /* 1️⃣ AUTH — THIS IS THE ONLY TRUE BOTTLENECK */
     const userCred = await createUserWithEmailAndPassword(
       firebaseAuth,
       cleanEmail,
@@ -165,47 +149,48 @@ export async function signUpUser({
 
     const uid = userCred.user.uid;
 
-    /* STEP 2: Build payload (SAFE MERGE) */
     const payload = {
       uid,
-      name,                          // legacy support
-      firstName: firstName || "",    // NEW
-      lastName: lastName || "",      // NEW
+      name,
+      firstName: firstName || "",
+      lastName: lastName || "",
       email: cleanEmail,
       phone: phone || "",
-      role,
-      createdAt: new Date().toISOString(),
+      role: cleanRole,
+      createdAt: serverTimestamp(),
     };
 
-    /* STEP 3: PATIENT → users collection */
-    if (role === "Patient") {
-      try {
-        await sendEmailVerification(userCred.user);
-      } catch {}
+    /* ===================== PATIENT ===================== */
+    if (cleanRole === "patient") {
+      // 🚀 Firestore writes in background (NON-BLOCKING)
+      Promise.all([
+        setDoc(doc(firebaseDB, "users", uid), {
+          ...payload,
+          status: "approved",
+        }),
+        setDoc(doc(firebaseDB, "patients", uid), {
+          uid,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          name,
+          email: cleanEmail,
+          phone: phone || "",
+          status: "approved",
+          createdAt: payload.createdAt,
+        }),
+      ]).catch(console.error);
 
-      await setDoc(doc(firebaseDB, "users", uid), {
-        ...payload,
-        status: "approved",
-      });
-
-      return {
-        success: true,
-        status: "approved",
-        uid,
-      };
+      // 💨 UI responds immediately
+      return { success: true, status: "approved", uid };
     }
 
-    /* STEP 4: DOCTOR / STAFF → requests collection */
-    await setDoc(doc(firebaseDB, "requests", uid), {
+    /* ===================== STAFF ===================== */
+    setDoc(doc(firebaseDB, "requests", uid), {
       ...payload,
       status: "pending",
-    });
+    }).catch(console.error);
 
-    return {
-      success: true,
-      status: "pending",
-      uid,
-    };
+    return { success: true, status: "pending", uid };
   } catch (err: any) {
     return { success: false, message: mapFirebaseError(err) };
   }

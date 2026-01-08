@@ -210,7 +210,7 @@ await saveSession({
             {/* LOGO */}
             <Animated.View style={[styles.logoRow, { transform: [{ scale: logoScale }] }]}>
               <Image
-                source={{ uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/newlogo" }}
+                source={{ uri: "https://ik.imagekit.io/7z0x3rycfi/arogyadhatha/Arogyadathaicon.png" }}
                 style={styles.logo}
               />
               <Text style={styles.logoText}>Arogyadatha</Text>
