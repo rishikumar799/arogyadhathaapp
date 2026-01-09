@@ -16,45 +16,91 @@ import {
   View,
 } from "react-native";
 
-// SESSION
+/* ================= SESSION ================= */
 import { loadSession } from "@/lib/authPersist";
 import { loadWebSession } from "@/lib/webPersist";
 
-// ASSETS
+/* ================= ASSETS ================= */
 import logo from "@/assets/images/Arogyadathalogo.png";
-import pharmacyAvatar from "@/assets/images/man.png";
+import hospitalAvatar from "@/assets/images/man.png";
 
-// LOCATION
+/* ================= LOCATION ================= */
 import LocationPickerSheet from "@/components/common/LocationPickerSheet";
 import { useLocation } from "@/contexts/LocationContext";
 
-// PROFILE MODAL
-import PharmacyProfileMenuModal from "@/components/pharmacy/layout/PharmacyProfileMenuModal";
+/* ================= PROFILE ================= */
+import HospitalProfileMenuModal from "@/components/hospital/layout/HospitalProfileMenuModal";
 
 /* ================= COLORS ================= */
 
 const COLORS = {
   bgStart: "#022C22",
   bgEnd: "#064E3B",
-
   glass: "rgba(236,253,243,0.12)",
   glassBorder: "rgba(167,243,208,0.35)",
-
   text: "#ECFDF5",
   muted: "#A7F3D0",
   brand: "#16A34A",
 };
 
+/* ================= ROLE BASED NAV ================= */
+
+type NavItem = { icon: any; label: string; path: string; exact?: boolean };
+type NavGroup = { title: string; items: NavItem[] };
+
+const NAV_BY_ROLE: Record<string, NavGroup[]> = {
+  hospital: [
+    {
+      title: "Core",
+      items: [
+        { icon: "grid-outline", label: "Dashboard", path: "/hospital", exact: true },
+        { icon: "calendar-outline", label: "Appointments", path: "/hospital/appointments" },
+      ],
+    },
+    {
+      title: "Users",
+      items: [
+        { icon: "people-outline", label: "Patients", path: "/hospital/patients" },
+        { icon: "medkit-outline", label: "Doctors", path: "/hospital/doctors" },
+        { icon: "flask-outline", label: "Diagnostics", path: "/hospital/diagnostics" },
+        { icon: "bandage-outline", label: "Pharmacy", path: "/hospital/pharmacy" },
+        { icon: "headset-outline", label: "Reception", path: "/hospital/reception" },
+      ],
+    },
+    {
+      title: "Operations",
+      items: [
+        { icon: "business-outline", label: "Departments", path: "/hospital/departments" },
+        { icon: "bed-outline", label: "Rooms & Beds", path: "/hospital/rooms" },
+        { icon: "cube-outline", label: "Inventory", path: "/hospital/inventory" },
+      ],
+    },
+    {
+      title: "Finance",
+      items: [
+        { icon: "card-outline", label: "Billing", path: "/hospital/billing" },
+        { icon: "bar-chart-outline", label: "Reports", path: "/hospital/reports" },
+      ],
+    },
+    {
+      title: "System",
+      items: [
+        { icon: "settings-outline", label: "Settings", path: "/hospital/settings" },
+      ],
+    },
+  ],
+};
+
 /* ================= MAIN ================= */
 
-export default function PharmacyTopNav() {
+export default function HospitalTopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = Platform.OS !== "web";
 
   const slideAnim = useRef(new Animated.Value(360)).current;
 
-  const [pharmacyName, setPharmacyName] = useState("Pharmacy");
+  const [role, setRole] = useState("hospital");
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
@@ -67,21 +113,17 @@ export default function PharmacyTopNav() {
     ? `${location.city}${location.district ? ", " + location.district : ""}`
     : "Select Location";
 
-  const isActive = (base: string) =>
-    pathname === base || pathname.startsWith(base + "/");
-
-  /* ================= LOAD SESSION ================= */
+  /* ================= SESSION ================= */
 
   useEffect(() => {
     (async () => {
       const session =
         Platform.OS === "web" ? loadWebSession() : await loadSession();
-
-      if (session?.name) setPharmacyName(session.name);
+      if (session?.role) setRole(session.role.toLowerCase());
     })();
   }, []);
 
-  /* ================= DRAWER ANIMATION ================= */
+  /* ================= DRAWER ANIM ================= */
 
   useEffect(() => {
     if (menuOpen) {
@@ -101,37 +143,38 @@ export default function PharmacyTopNav() {
     router.push(path);
   };
 
+  /* ================= ACTIVE LOGIC (FIXED) ================= */
+
+  const isActive = (path: string, exact = false) =>
+    exact
+      ? pathname === path
+      : pathname === path || pathname.startsWith(path + "/");
+
+  const NAV_GROUPS = NAV_BY_ROLE[role] || [];
+
   return (
     <>
       {/* ================= TOP BAR ================= */}
-      <LinearGradient
-        colors={[COLORS.bgStart, COLORS.bgEnd]}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={[COLORS.bgStart, COLORS.bgEnd]} style={styles.gradient}>
         <View style={styles.container}>
-          {/* LEFT */}
           <View style={styles.left}>
             <Image source={logo} style={styles.logo} />
             <View>
               <Text style={styles.appName}>Arogyadatha</Text>
-
               <TouchableOpacity
                 style={styles.locationRow}
                 onPress={() => setShowLocation(true)}
               >
                 <Ionicons name="location" size={13} color={COLORS.brand} />
-                <Text style={styles.locationText} numberOfLines={1}>
-                  {locationLabel}
-                </Text>
+                <Text style={styles.locationText}>{locationLabel}</Text>
                 <Ionicons name="chevron-down" size={12} color={COLORS.muted} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* RIGHT */}
           <View style={styles.right}>
             <TouchableOpacity onPress={() => setProfileOpen(true)}>
-              <Image source={pharmacyAvatar} style={styles.avatar} />
+              <Image source={hospitalAvatar} style={styles.avatar} />
             </TouchableOpacity>
 
             {isMobile && (
@@ -146,7 +189,6 @@ export default function PharmacyTopNav() {
         </View>
       </LinearGradient>
 
-      {/* ================= LOCATION PICKER ================= */}
       <LocationPickerSheet
         visible={showLocation}
         onClose={() => setShowLocation(false)}
@@ -154,99 +196,36 @@ export default function PharmacyTopNav() {
 
       {/* ================= MOBILE DRAWER ================= */}
       {isMobile && (
-        <Modal visible={menuOpen} transparent animationType="none">
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setMenuOpen(false)}
-          />
+        <Modal visible={menuOpen} transparent>
+          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
 
           <Animated.View
             style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}
           >
-            <LinearGradient
-              colors={[COLORS.bgStart, COLORS.bgEnd]}
-              style={styles.drawerInner}
-            >
-              {/* HEADER */}
-              <View style={styles.drawerHeader}>
-                <View style={styles.drawerBrand}>
-                  <Image source={logo} style={styles.drawerLogo} />
-                  <Text style={styles.drawerTitle}>Arogyadatha</Text>
-                </View>
-                <Pressable onPress={() => setMenuOpen(false)}>
-                  <Ionicons name="close" size={22} color={COLORS.text} />
-                </Pressable>
-              </View>
-
-              {/* NAV ITEMS */}
-             {/* NAV ITEMS */}
-<ScrollView showsVerticalScrollIndicator={false}>
-  <NavItem
-    icon="grid-outline"
-    label="Dashboard"
-    active={pathname === "/pharmacy"}
-    onPress={() => go("/pharmacy")}
-  />
-
-  <NavItem
-    icon="document-text-outline"
-    label="Prescriptions"
-    active={isActive("/pharmacy/prescriptions")}
-    onPress={() => go("/pharmacy/prescriptions")}
-  />
-
-  <NavItem
-    icon="people-outline"
-    label="Patients"
-    active={isActive("/pharmacy/patients")}
-    onPress={() => go("/pharmacy/patients")}
-  />
-
-  <NavItem
-    icon="cube-outline"
-    label="Inventory"
-    active={isActive("/pharmacy/inventory")}
-    onPress={() => go("/pharmacy/inventory")}
-  />
-
-  <NavItem
-    icon="card-outline"
-    label="Billing"
-    active={isActive("/pharmacy/billing")}
-    onPress={() => go("/pharmacy/billing")}
-  />
-
-  <NavItem
-    icon="bar-chart-outline"
-    label="Reports"
-    active={isActive("/pharmacy/reports")}
-    onPress={() => go("/pharmacy/reports")}
-  />
-
-  <NavItem
-    icon="person-outline"
-    label="Profile"
-    active={isActive("/pharmacy/profile")}
-    onPress={() => go("/pharmacy/profile")}
-  />
-
-  <NavItem
-    icon="settings-outline"
-    label="Settings"
-    active={isActive("/pharmacy/settings")}
-    onPress={() => go("/pharmacy/settings")}
-  />
-
-  <View style={{ height: 24 }} />
-</ScrollView>
-
+            <LinearGradient colors={[COLORS.bgStart, COLORS.bgEnd]} style={styles.drawerInner}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {NAV_GROUPS.map(group => (
+                  <View key={group.title}>
+                    <Text style={styles.groupTitle}>{group.title}</Text>
+                    {group.items.map(item => (
+                      <NavItem
+                        key={item.path}
+                        icon={item.icon}
+                        label={item.label}
+                        active={isActive(item.path, item.exact)}
+                        onPress={() => go(item.path)}
+                      />
+                    ))}
+                  </View>
+                ))}
+                <View style={{ height: 28 }} />
+              </ScrollView>
             </LinearGradient>
           </Animated.View>
         </Modal>
       )}
 
-      {/* ================= PROFILE MODAL ================= */}
-      <PharmacyProfileMenuModal
+      <HospitalProfileMenuModal
         visible={profileOpen}
         onClose={() => setProfileOpen(false)}
       />
@@ -281,8 +260,6 @@ function NavItem({ icon, label, onPress, active }: any) {
 const styles = StyleSheet.create({
   gradient: {
     paddingTop: Platform.OS === "ios" ? 48 : Platform.OS === "android" ? 42 : 18,
-    paddingBottom: 4,
-    elevation: 4,
   },
   container: {
     height: 64,
@@ -295,12 +272,7 @@ const styles = StyleSheet.create({
   right: { flexDirection: "row", alignItems: "center", gap: 14 },
   logo: { width: 42, height: 42 },
   appName: { fontSize: 17, fontWeight: "800", color: COLORS.text },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: -2,
-  },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   locationText: { fontSize: 12, color: COLORS.muted },
   avatar: {
     width: 38,
@@ -310,19 +282,21 @@ const styles = StyleSheet.create({
     borderColor: COLORS.muted,
   },
   menuBtn: { padding: 6 },
+
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
   drawer: { position: "absolute", right: 0, top: 0, bottom: 0, width: "85%" },
-  drawerInner: { flex: 1 },
-  drawerHeader: {
-    height: 68,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  drawerInner: { flex: 1, paddingTop: 18 },
+
+  groupTitle: {
+    marginLeft: 22,
+    marginTop: 18,
+    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.muted,
+    textTransform: "uppercase",
   },
-  drawerBrand: { flexDirection: "row", alignItems: "center", gap: 10 },
-  drawerLogo: { width: 34, height: 34 },
-  drawerTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+
   item: {
     flexDirection: "row",
     alignItems: "center",

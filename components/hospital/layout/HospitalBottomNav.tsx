@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +16,7 @@ import {
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
-/* ================= CONSTANTS ================= */
+/* ================= DIMENSIONS ================= */
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +26,7 @@ const BAR_HEIGHT = 76;
 const FAB_SIZE = 70;
 const FAB_RADIUS = FAB_SIZE / 2;
 
-const SHEET_HEIGHT = height * 0.48;
+const SHEET_HEIGHT = height * 0.55;
 
 const DOT_SIZE = 6;
 const DOT_TOP = 6;
@@ -44,169 +45,148 @@ const COLORS = {
   white: "#FFFFFF",
 };
 
-/* ================= NAV DATA (PHARMACY) ================= */
+/* ================= NAV CONFIG ================= */
 
-/** MAIN TABS (always visible) */
-const MAIN_TABS = [
-  {
-    icon: "grid-outline",
-    label: "Dashboard",
-    route: "/pharmacy",
-    exact: true,
-  },
-  {
-    icon: "document-text-outline",
-    label: "Prescriptions",
-    route: "/pharmacy/prescriptions",
-  },
-  {
-    icon: "people-outline",
-    label: "Patients",
-    route: "/pharmacy/patients",
-  },
-  {
-    icon: "cube-outline",
-    label: "Inventory",
-    route: "/(main)/pharmacy/inventory ",
-  },
+type Tab = {
+  icon: any;
+  label: string;
+  route: string;
+  exact?: boolean;
+};
+
+const MAIN_TABS: Tab[] = [
+  { icon: "grid-outline", label: "Dashboard", route: "/hospital", exact: true },
+  { icon: "people-outline", label: "Patients", route: "/hospital/patients" },
+  { icon: "calendar-outline", label: "Appointments", route: "/hospital/appointments" },
+  { icon: "cube-outline", label: "Inventory", route: "/hospital/inventory" },
 ];
 
-/** MORE MENU (FAB sheet) */
-const MORE_MENU = [
-  {
-    icon: "card-outline",
-    label: "Billing",
-    route: "/pharmacy/billing",
-  },
-  {
-    icon: "bar-chart-outline",
-    label: "Reports",
-    route: "/pharmacy/reports",
-  },
-  {
-    icon: "person-outline",
-    label: "Profile",
-    route: "/pharmacy/profile",
-  },
-  {
-    icon: "settings-outline",
-    label: "Settings",
-    route: "/pharmacy/settings",
-  },
+const MORE_MENU: Tab[] = [
+  { icon: "medkit-outline", label: "Doctors", route: "/hospital/doctors" },
+  { icon: "flask-outline", label: "Diagnostics", route: "/hospital/diagnostics" },
+  { icon: "bandage-outline", label: "Pharmacy", route: "/hospital/pharmacy" },
+  { icon: "headset-outline", label: "Reception", route: "/hospital/reception" },
+
+  { icon: "business-outline", label: "Departments", route: "/hospital/departments" },
+  { icon: "bed-outline", label: "Rooms & Beds", route: "/hospital/rooms" },
+
+  { icon: "card-outline", label: "Billing", route: "/hospital/billing" },
+  { icon: "bar-chart-outline", label: "Reports", route: "/hospital/reports" },
+
+  { icon: "chatbubbles-outline", label: "Communication", route: "/hospital/communication" },
+  { icon: "settings-outline", label: "Settings", route: "/hospital/settings" },
 ];
 
 /* ================= MAIN ================= */
 
-export default function PharmacyBottomNav() {
+export default function HospitalBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [visible, setVisible] = useState(false);
-  const [tabLayouts, setTabLayouts] = useState<number[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [tabCenters, setTabCenters] = useState<number[]>([]);
 
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const sheetScale = useRef(new Animated.Value(0.96)).current;
-  const dotX = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.96)).current;
   const fabRotate = useRef(new Animated.Value(0)).current;
+  const dotX = useRef(new Animated.Value(0)).current;
 
-  const isActive = (route: string, exact?: boolean) =>
-    exact
-      ? pathname === route
-      : pathname === route || pathname.startsWith(route + "/");
+  const isActive = (route: string, exact = false) =>
+    exact ? pathname === route : pathname === route || pathname.startsWith(route + "/");
 
-  const activeIndex = MAIN_TABS.findIndex(tab =>
-    isActive(tab.route, tab.exact)
+  const activeIndex = useMemo(
+    () => MAIN_TABS.findIndex(t => isActive(t.route, t.exact)),
+    [pathname]
   );
 
-  /* ================= DOT INDICATOR ================= */
-
   useEffect(() => {
-    if (activeIndex < 0 || !tabLayouts[activeIndex]) return;
+    if (activeIndex < 0 || !tabCenters[activeIndex]) return;
 
     Animated.spring(dotX, {
-      toValue: tabLayouts[activeIndex] - DOT_SIZE / 2,
-      damping: 20,
-      stiffness: 180,
+      toValue: tabCenters[activeIndex] - DOT_SIZE / 2,
+      damping: 18,
+      stiffness: 160,
       useNativeDriver: true,
     }).start();
-  }, [activeIndex, tabLayouts]);
-
-  /* ================= FAB ================= */
+  }, [activeIndex, tabCenters]);
 
   const rotate = fabRotate.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "45deg"],
   });
 
-  const openMenu = () => {
-    setVisible(true);
+  const openSheet = () => {
+    setSheetOpen(true);
     Animated.parallel([
       Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
-      Animated.spring(sheetScale, { toValue: 1, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
       Animated.spring(fabRotate, { toValue: 1, useNativeDriver: true }),
     ]).start();
   };
 
-  const closeMenuInstant = () => {
-    setVisible(false);
+  const closeSheet = () => {
+    setSheetOpen(false);
     translateY.setValue(SHEET_HEIGHT);
-    sheetScale.setValue(0.96);
+    scale.setValue(0.96);
     fabRotate.setValue(0);
   };
 
   return (
     <>
       {/* ================= MORE SHEET ================= */}
-      <Modal transparent visible={visible} animationType="none">
-        <Pressable style={styles.backdrop} onPress={closeMenuInstant} />
+      <Modal visible={sheetOpen} transparent animationType="none">
+        <Pressable style={styles.backdrop} onPress={closeSheet} />
 
-        <Animated.View
-          style={[
-            styles.sheet,
-            { transform: [{ translateY }, { scale: sheetScale }] },
-          ]}
-        >
-          <LinearGradient
-            colors={[COLORS.bgStart, COLORS.bgEnd]}
-            style={styles.sheetInner}
-          >
+        <Animated.View style={[styles.sheet, { transform: [{ translateY }, { scale }] }]}>
+          <LinearGradient colors={[COLORS.bgStart, COLORS.bgEnd]} style={styles.sheetInner}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>More</Text>
-              <TouchableOpacity onPress={closeMenuInstant}>
+              <TouchableOpacity onPress={closeSheet}>
                 <Ionicons name="close" size={22} color={COLORS.text} />
               </TouchableOpacity>
             </View>
 
-            {MORE_MENU.map(item => {
-              const active = isActive(item.route);
+            {/* 🔽 SCROLLABLE CONTENT */}
+          <ScrollView
+  showsVerticalScrollIndicator={true}
+  indicatorStyle="white"              // iOS: light stick
+  persistentScrollbar={true}          // Android: always show
+  scrollIndicatorInsets={{ right: 2 }}// Pulls stick slightly inward
+  contentContainerStyle={{ paddingBottom: 40 }}
+>
+  {MORE_MENU.map(item => {
+    const active = isActive(item.route);
+    return (
+      <TouchableOpacity
+        key={item.route}
+        style={[styles.sheetItem, active && styles.sheetItemActive]}
+        onPress={() => {
+          closeSheet();
+          router.replace(item.route);
+        }}
+      >
+        <View style={styles.sheetIcon}>
+          <Ionicons
+            name={item.icon}
+            size={22}
+            color={active ? COLORS.brand : COLORS.muted}
+          />
+        </View>
+        <Text style={[styles.sheetText, active && { color: COLORS.text }]}>
+          {item.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</ScrollView>
 
-              return (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[styles.sheetItem, active && styles.sheetItemActive]}
-                  onPress={() => {
-                    closeMenuInstant();
-                    router.replace(item.route);
-                  }}
-                >
-                  <View style={styles.sheetIcon}>
-                    <Ionicons
-                      name={item.icon as any}
-                      size={22}
-                      color={active ? COLORS.brand : COLORS.muted}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.sheetText,
-                      active && { color: COLORS.text },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+
+            {/* 🌫️ FADE HINT */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={["transparent", COLORS.bgEnd]}
+              style={styles.fade}
+            />
           </LinearGradient>
         </Animated.View>
       </Modal>
@@ -224,13 +204,12 @@ export default function PharmacyBottomNav() {
           />
 
           <View style={styles.row}>
-            {MAIN_TABS.slice(0, 2).map((t, i) => renderTab(t, i))}
+            {MAIN_TABS.slice(0, 2).map((tab, i) => renderTab(tab, i))}
             <View style={{ width: FAB_SIZE }} />
-            {MAIN_TABS.slice(2).map((t, i) => renderTab(t, i + 2))}
+            {MAIN_TABS.slice(2).map((tab, i) => renderTab(tab, i + 2))}
           </View>
         </View>
 
-        {/* ================= FAB ================= */}
         <Animated.View style={[styles.fabWrap, { transform: [{ rotate }] }]}>
           <Svg width={FAB_SIZE + 16} height={FAB_SIZE + 16}>
             <Circle
@@ -241,7 +220,7 @@ export default function PharmacyBottomNav() {
             />
           </Svg>
 
-          <Pressable onPress={openMenu} style={styles.fab}>
+          <Pressable onPress={openSheet} style={styles.fab}>
             <Ionicons name="add" size={34} color="#fff" />
           </Pressable>
         </Animated.View>
@@ -249,7 +228,7 @@ export default function PharmacyBottomNav() {
     </>
   );
 
-  function renderTab(tab: any, index: number) {
+  function renderTab(tab: Tab, index: number) {
     const active = isActive(tab.route, tab.exact);
 
     return (
@@ -258,7 +237,7 @@ export default function PharmacyBottomNav() {
         style={styles.tab}
         onLayout={e => {
           const x = e.nativeEvent.layout.x + e.nativeEvent.layout.width / 2;
-          setTabLayouts(prev => {
+          setTabCenters(prev => {
             const copy = [...prev];
             copy[index] = x;
             return copy;
@@ -271,12 +250,7 @@ export default function PharmacyBottomNav() {
           size={22}
           color={active ? COLORS.brand : COLORS.inactive}
         />
-        <Text
-          style={[
-            styles.tabText,
-            { color: active ? COLORS.brand : COLORS.inactive },
-          ]}
-        >
+        <Text style={[styles.tabText, { color: active ? COLORS.brand : COLORS.inactive }]}>
           {tab.label}
         </Text>
       </TouchableOpacity>
@@ -328,6 +302,7 @@ const styles = StyleSheet.create({
   },
   tab: { width: 70, alignItems: "center" },
   tabText: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+
   dot: {
     position: "absolute",
     top: DOT_TOP,
@@ -336,6 +311,7 @@ const styles = StyleSheet.create({
     borderRadius: DOT_SIZE / 2,
     backgroundColor: COLORS.brand,
   },
+
   fabWrap: {
     position: "absolute",
     top: -FAB_RADIUS + 6,
@@ -351,7 +327,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+
   sheet: {
     position: "absolute",
     bottom: 0,
@@ -359,6 +337,15 @@ const styles = StyleSheet.create({
     height: SHEET_HEIGHT,
   },
   sheetInner: { flex: 1, padding: 16 },
+
+  fade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
+
   sheetHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -366,6 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sheetTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+
   sheetItem: {
     flexDirection: "row",
     alignItems: "center",

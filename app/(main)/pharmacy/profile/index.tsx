@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 const COLORS = {
-  primary: "#10B981",
+  primary: "#065f46",
   secondary: "#3B82F6",
   accent: "#8B5CF6",
   warning: "#F59E0B",
@@ -116,9 +116,9 @@ export default function ProfilePage() {
   ];
 
   return (
-    <ScrollView style={styles.page} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.page} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
       {/* HEADER */}
-      <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.header}>
+      <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   editButton: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, gap: 8 },
   editButtonText: { fontSize: 14, color: "#FFFFFF", fontWeight: "600" },
   statsContainer: { paddingHorizontal: 24, marginVertical: 20, flexDirection: "row", gap: 12 },
-  statCard: { flex: 1, backgroundColor: COLORS.bg, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.border },
+  statCard: { flex: 1, backgroundColor: COLORS.bg, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.border,width: 220 },
   statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 },
   statValue: { fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 2 },
   statLabel: { fontSize: 11, color: COLORS.muted, fontWeight: "600" },

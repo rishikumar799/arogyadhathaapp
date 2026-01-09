@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 const COLORS = {
-  primary: "#10B981",
+  primary: "#065f46",
   secondary: "#3B82F6",
   accent: "#8B5CF6",
   warning: "#F59E0B",
@@ -122,7 +122,7 @@ export default function SettingsPage() {
   return (
     <ScrollView style={styles.page} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
-      <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.header}>
+      <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.header}>
         <View style={styles.headerContent}>
           <View>
             <ThemedText style={styles.headerTitle}>Settings</ThemedText>

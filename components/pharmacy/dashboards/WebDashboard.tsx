@@ -20,9 +20,9 @@ const { width } = Dimensions.get("window");
 const COLORS = {
   bg: "#F8FAFC",
   card: "#FFFFFF",
-  primary: "#16A34A",
+  primary: "#065f46",
   primaryLight: "#34D399",
-  primaryDark: "#065F46",
+  primaryDark: "#065f46",
   success: "#10B981",
   warning: "#F59E0B",
   danger: "#EF4444",

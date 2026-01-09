@@ -389,6 +389,7 @@ export default function ReceptionistDashboard() {
         horizontal 
         showsHorizontalScrollIndicator={false}
         style={styles.quickActionsScroll}
+        
       >
         <TouchableOpacity style={styles.actionCard}>
           <View style={[styles.actionIcon, { backgroundColor: COLORS.primary }]}>

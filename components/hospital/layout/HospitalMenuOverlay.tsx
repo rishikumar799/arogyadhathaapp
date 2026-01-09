@@ -14,18 +14,18 @@ import {
 /* ================= MENU ITEMS ================= */
 
 const ITEMS = [
-  { label: "Dashboard", icon: "grid-outline", path: "/pharmacy" },
-  { label: "Appointments", icon: "calendar-outline", path: "/pharmacy/appointments" },
-  { label: "Patients", icon: "people-outline", path: "/pharmacy/patients" },
-  { label: "New Appointment", icon: "add-circle-outline", path: "/pharmacy/new-appointment" },
-  { label: "Billing", icon: "document-text-outline", path: "/pharmacy/billing" },
-  { label: "Profile", icon: "person-outline", path: "/pharmacy/profile" },
-  { label: "Settings", icon: "settings-outline", path: "/pharmacy/settings" },
+  { label: "Dashboard", icon: "grid-outline", path: "/hospital" },
+  { label: "Appointments", icon: "calendar-outline", path: "/hospital/appointments" },
+  { label: "Patients", icon: "people-outline", path: "/hospital/patients" },
+  { label: "New Appointment", icon: "add-circle-outline", path: "/hospital/new-appointment" },
+  { label: "Billing", icon: "document-text-outline", path: "/hospital/billing" },
+  { label: "Profile", icon: "person-outline", path: "/hospital/profile" },
+  { label: "Settings", icon: "settings-outline", path: "/hospital/settings" },
 ];
 
 /* ================= MAIN ================= */
 
-export default function PharmacyMenuOverlay({
+export default function HospitalMenuOverlay({
   visible,
   onClose,
   onNavigate,

@@ -14,8 +14,8 @@ import {
 } from "react-native";
 
 const COLORS = {
-  primary: "#10B981",
-  primaryLight: "#34D399",
+  primary: "#065f46",
+  primaryLight: "#065f46",
   secondary: "#3B82F6",
   accent: "#8B5CF6",
   warning: "#F59E0B",

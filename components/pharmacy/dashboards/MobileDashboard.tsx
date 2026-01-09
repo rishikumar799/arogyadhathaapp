@@ -3,10 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Dimensions,
-  Platform,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -18,14 +15,14 @@ import { doc, getDoc } from "firebase/firestore";
 
 const { width } = Dimensions.get("window");
 
-/* ================= THEME ================= */
+/* ================= PHARMACY MOBILE THEME ================= */
 
 const COLORS = {
-  bg: "#FFFFFF",
+  bg: "#F8FAFC",
   card: "#FFFFFF",
-  primary: "#16A34A",
+  primary: "#065F46",
   primaryLight: "#34D399",
-  primaryDark: "#065F46",
+  success: "#10B981",
   warning: "#F59E0B",
   danger: "#EF4444",
   info: "#0EA5E9",
@@ -35,244 +32,237 @@ const COLORS = {
   soft: "#ECFDF5",
 };
 
-/* ================= GRADIENT CARD ================= */
+/* ================= DATA ================= */
 
-const GradientCard = ({ children, colors, style }: any) => (
-  <LinearGradient
-    colors={colors}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={[styles.gradientCard, style]}
-  >
-    {children}
-  </LinearGradient>
-);
+const KPI = [
+  { label: "Prescriptions", value: "86", icon: "document-text", color: COLORS.primary },
+  { label: "Pending", value: "12", icon: "time", color: COLORS.warning },
+  { label: "Low Stock", value: "6", icon: "alert-circle", color: COLORS.danger },
+  { label: "Revenue", value: "₹42,800", icon: "cash", color: COLORS.success },
+];
+
+const QUICK_ACTIONS = [
+  { label: "New Bill", icon: "add-circle", color: COLORS.primary },
+  { label: "Dispense", icon: "checkmark-done", color: COLORS.success },
+  { label: "Inventory", icon: "cube", color: COLORS.info },
+  { label: "Suppliers", icon: "people", color: COLORS.warning },
+];
+
+const PENDING_ORDERS = [
+  { name: "John Carter", items: 3, status: "Waiting", color: COLORS.warning },
+  { name: "Emily Stone", items: 1, status: "Ready", color: COLORS.success },
+  { name: "Michael Ross", items: 5, status: "Insurance", color: COLORS.info },
+];
+
+const LOW_STOCK = [
+  { name: "Paracetamol 500mg", qty: 12 },
+  { name: "Amoxicillin", qty: 8 },
+  { name: "Insulin", qty: 5 },
+];
 
 /* ================= MAIN ================= */
 
 export default function PharmacyDashboardMobile() {
   const [pharmacyName, setPharmacyName] = useState("Pharmacy");
   const [dateTime, setDateTime] = useState("");
-  const [activeTab, setActiveTab] = useState("prescriptions");
-  const [refreshing, setRefreshing] = useState(false);
-
-  const [prescriptions, setPrescriptions] = useState([
-    { id: "1", patient: "John Carter", items: 3 },
-    { id: "2", patient: "Emily Stone", items: 1 },
-  ]);
-
-  const [pendingOrders] = useState([
-    { id: "1", patient: "Robert Chen", wait: "15 min" },
-    { id: "2", patient: "Maria Garcia", wait: "25 min" },
-  ]);
-
-  const [lowStock] = useState([
-    { id: "1", name: "Paracetamol", qty: 12 },
-    { id: "2", name: "Insulin", qty: 5 },
-  ]);
 
   /* ===== LOAD PHARMACY NAME ===== */
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async user => {
       if (!user) return;
-
-      const snap = await getDoc(doc(db, "pharmacies", user.uid));
+      const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         setPharmacyName(snap.data()?.name || "Pharmacy");
       }
     });
-
     return unsub;
   }, []);
 
-  /* ===== LIVE DATE + TIME ===== */
+  /* ===== LIVE DATE ===== */
   useEffect(() => {
     const update = () => {
       const now = new Date();
       setDateTime(
-        now.toLocaleString("en-US", {
+        now.toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
           day: "numeric",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
         })
       );
     };
-
     update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
   }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
-  };
-
-  const handleDispense = (id: string) => {
-    Alert.alert("Dispense Medicine", "Confirm dispense?", [
-      { text: "Cancel" },
-      { text: "Dispense" },
-    ]);
-  };
-
-  /* ================= RENDER ================= */
-
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.page} showsVerticalScrollIndicator={false}  contentContainerStyle={{ paddingBottom: 100 }}>
       {/* ===== HEADER ===== */}
-      <View style={styles.header}>
-        <ThemedText style={styles.greeting}>Welcome back,</ThemedText>
-        <ThemedText style={styles.title}>{pharmacyName}</ThemedText>
-        <ThemedText style={styles.date}>{dateTime}</ThemedText>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primary]}
+        style={styles.header}
       >
-        {/* ===== KPI ===== */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.kpiRow}>
-          <GradientCard colors={[COLORS.primary, COLORS.primaryLight]} style={styles.kpiCard}>
-            <ThemedText style={styles.kpiValue}>{prescriptions.length}</ThemedText>
-            <ThemedText style={styles.kpiLabel}>Prescriptions</ThemedText>
-          </GradientCard>
+        <ThemedText style={styles.greeting}>Welcome back</ThemedText>
+        <ThemedText style={styles.title}>{pharmacyName}</ThemedText>
+        <ThemedText style={styles.subtitle}>{dateTime}</ThemedText>
+      </LinearGradient>
 
-          <GradientCard colors={["#F59E0B", "#FBBF24"]} style={styles.kpiCard}>
-            <ThemedText style={styles.kpiValue}>{pendingOrders.length}</ThemedText>
-            <ThemedText style={styles.kpiLabel}>Pending Orders</ThemedText>
-          </GradientCard>
+      {/* ===== KPI SCROLL ===== */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.kpiScroll}
+      >
+        {KPI.map((k, i) => (
+          <View key={i} style={styles.kpiCard}>
+            <View style={[styles.kpiIcon, { backgroundColor: k.color + "20" }]}>
+              <Ionicons name={k.icon as any} size={22} color={k.color} />
+            </View>
+            <ThemedText style={styles.kpiValue}>{k.value}</ThemedText>
+            <ThemedText style={styles.kpiLabel}>{k.label}</ThemedText>
+          </View>
+        ))}
+      </ScrollView>
 
-          <GradientCard colors={["#EF4444", "#F87171"]} style={styles.kpiCard}>
-            <ThemedText style={styles.kpiValue}>{lowStock.length}</ThemedText>
-            <ThemedText style={styles.kpiLabel}>Low Stock</ThemedText>
-          </GradientCard>
-        </ScrollView>
-
-        {/* ===== TABS ===== */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
-          {["prescriptions", "orders", "inventory"].map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <ThemedText
-                style={[styles.tabText, activeTab === tab && styles.activeTabText]}
-              >
-                {tab.toUpperCase()}
-              </ThemedText>
+      {/* ===== QUICK ACTIONS ===== */}
+      <View style={styles.section}>
+        <ThemedText style={styles.sectionTitle}>Quick Actions</ThemedText>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {QUICK_ACTIONS.map((a, i) => (
+            <TouchableOpacity key={i} style={styles.actionCard}>
+              <View style={[styles.actionIcon, { backgroundColor: a.color }]}>
+                <Ionicons name={a.icon as any} size={22} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionText}>{a.label}</ThemedText>
             </TouchableOpacity>
           ))}
         </ScrollView>
+      </View>
 
-        {/* ===== CONTENT ===== */}
-        <View style={styles.section}>
-          {activeTab === "prescriptions" &&
-            prescriptions.map(p => (
-              <View key={p.id} style={styles.card}>
-                <ThemedText style={styles.cardTitle}>{p.patient}</ThemedText>
-                <ThemedText style={styles.subText}>{p.items} medicines</ThemedText>
-                <TouchableOpacity
-                  style={styles.primaryBtn}
-                  onPress={() => handleDispense(p.id)}
-                >
-                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                  <ThemedText style={styles.btnText}>Dispense</ThemedText>
-                </TouchableOpacity>
+      {/* ===== PENDING ORDERS ===== */}
+      <View style={styles.section}>
+        <ThemedText style={styles.sectionTitle}>Pending Orders</ThemedText>
+        <View style={styles.card}>
+          {PENDING_ORDERS.map((o, i) => (
+            <View key={i} style={styles.row}>
+              <View>
+                <ThemedText style={styles.rowTitle}>{o.name}</ThemedText>
+                <ThemedText style={styles.rowSub}>{o.items} medicines</ThemedText>
               </View>
-            ))}
-
-          {activeTab === "orders" &&
-            pendingOrders.map(o => (
-              <View key={o.id} style={styles.card}>
-                <ThemedText style={styles.cardTitle}>{o.patient}</ThemedText>
-                <ThemedText style={styles.subText}>Waiting {o.wait}</ThemedText>
+              <View style={[styles.badge, { backgroundColor: o.color + "20" }]}>
+                <ThemedText style={[styles.badgeText, { color: o.color }]}>
+                  {o.status}
+                </ThemedText>
               </View>
-            ))}
-
-          {activeTab === "inventory" &&
-            lowStock.map(s => (
-              <View key={s.id} style={styles.card}>
-                <ThemedText style={styles.cardTitle}>{s.name}</ThemedText>
-                <ThemedText style={styles.subText}>{s.qty} left</ThemedText>
-              </View>
-            ))}
+            </View>
+          ))}
         </View>
+      </View>
 
-        {/* bottom space for bottom nav */}
-        <View style={{ height: 120 }} />
-      </ScrollView>
-    </View>
+      {/* ===== LOW STOCK ===== */}
+      <View style={styles.section}>
+        <ThemedText style={styles.sectionTitle}>Low Stock Alerts</ThemedText>
+        <View style={styles.card}>
+          {LOW_STOCK.map((m, i) => (
+            <View key={i} style={styles.row}>
+              <ThemedText style={styles.rowTitle}>{m.name}</ThemedText>
+              <ThemedText style={styles.stockQty}>{m.qty} left</ThemedText>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={{ height: 80 }} />
+    </ScrollView>
   );
 }
 
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  page: { flex: 1, backgroundColor: COLORS.bg },
 
   header: {
-    backgroundColor: COLORS.primaryDark,
-    padding: 20,
-    paddingTop: Platform.OS === "ios" ? 50 : 30,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: 56,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 16,
   },
+  greeting: { color: "rgba(255,255,255,0.9)", fontSize: 14 },
+  title: { color: "#FFF", fontSize: 26, fontWeight: "800", marginVertical: 4 },
+  subtitle: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
 
-  greeting: { color: "rgba(255,255,255,0.85)", fontSize: 14 },
-  title: { color: "#fff", fontSize: 26, fontWeight: "800" },
-  date: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 4 },
-
-  kpiRow: { padding: 16 },
-  kpiCard: { width: 160, marginRight: 12, padding: 16, borderRadius: 16 },
-  kpiValue: { fontSize: 28, fontWeight: "800", color: "#fff" },
-  kpiLabel: { fontSize: 13, color: "#fff" },
-
-  tabs: { paddingHorizontal: 16, marginBottom: 16 },
-  tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: COLORS.soft,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  activeTab: { backgroundColor: COLORS.primary },
-  tabText: { fontSize: 12, fontWeight: "700", color: COLORS.muted },
-  activeTabText: { color: "#fff" },
-
-  section: { paddingHorizontal: 16 },
-  card: {
+  kpiScroll: { paddingHorizontal: 16, gap: 14 },
+  kpiCard: {
+    width: width * 0.42,
     backgroundColor: COLORS.card,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-  subText: { fontSize: 12, color: COLORS.muted, marginBottom: 8 },
-
-  primaryBtn: {
-    flexDirection: "row",
+  kpiIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.primary,
-    padding: 10,
-    borderRadius: 10,
     justifyContent: "center",
+    marginBottom: 10,
   },
-  btnText: { color: "#fff", fontWeight: "700" },
+  kpiValue: { fontSize: 20, fontWeight: "800", color: COLORS.text },
+  kpiLabel: { fontSize: 12, color: COLORS.muted },
 
-  gradientCard: {
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+  section: { paddingHorizontal: 16, marginTop: 24 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 14,
+    color: COLORS.text,
   },
+
+  actionCard: {
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    width: 100,
+    marginRight: 14,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  actionText: { fontSize: 12, fontWeight: "600", color: COLORS.text },
+
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  rowTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+  rowSub: { fontSize: 12, color: COLORS.muted },
+
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeText: { fontSize: 12, fontWeight: "700" },
+
+  stockQty: { fontSize: 13, fontWeight: "700", color: COLORS.danger },
 });
